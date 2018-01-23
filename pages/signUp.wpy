@@ -1,0 +1,308 @@
+<template>
+  <form bindsubmit="formSubmit">
+  <view class="photo" bindtap='takePhoto'>
+    <image src="{{photo_path ? photo_path : '../asset/photo.png'}}" class="{{photo_class}}" mode="widthFix">
+    </image>
+    <view>请拍照上传个人照片</view>
+  </view>
+
+  <view class="page-section">
+    <view class="title">姓名</view>
+    <view class="after_title">
+      <view class="input_container">
+        <input class="input" placeholder="请输入姓名" confirm-type="next" name="name" />
+      </view>
+    </view>
+  </view>
+
+  <view class="page-section">
+    <view class="title">身份证号</view>
+    <view class="after_title">
+      <view class="input_container">
+        <input class="input" placeholder="请输入身份证号" type="idcard" confirm-type="next" name="id" />
+      </view>
+    </view>
+  </view>
+
+  <view class="page-section">
+    <view class="title">学院</view>
+    <view class="after_title">
+      <view class="input_container">
+        <input class="input" placeholder="请输入学院" confirm-type="done" name="college" />
+      </view>
+    </view>
+  </view>
+
+  <view class="page-section">
+    <view class="title">年级</view>
+    <view class="after_title">
+      <view class="input_container">
+        <picker class="input" range="{{admissionYears}}" bindchange="bindPickerChange">
+          <view wx:if="{{chosen_admissionYear === undefined}}" class="placeholder correction">
+            请选择年级
+          </view>
+          <view wx:else class="correction">
+            {{chosen_admissionYear}}
+          </view>
+        </picker>
+      </view>
+    </view>
+  </view>
+
+  <view class="page-section">
+    <view class="title">班级</view>
+    <view class="after_title">
+      <view class="input_container">
+        <input class="input" placeholder="请输入所在班级" confirm-type="done" name="klass" />
+      </view>
+    </view>
+  </view>
+
+  <!-- <view class="page-section">
+    <view class="title switch_title">开启服务通知推送</view>
+    <switch class="switch" bindchange="switchChange" checked='{{switchVal}}'></switch>
+    <hr></hr>
+  </view>
+  <view wx:if="{{denyAuth}}">
+    <view class="danger_info center_text">
+      您已拒绝授权，无法开启服务通知推送
+    </view>
+  </view> -->
+
+  <view class="page-section">
+    <button class="signUp_buton" type="primary" formType="submit">
+      注册
+    </button>
+  </view>
+</form>
+</template>
+<script>
+import wepy from 'wepy'
+import globalData from '../state/globalData'
+export default class signUp extends wepy.page {
+  config = {
+    navigationBarBackgroundColor: '#F8F8F8',
+    backgroundColor: '#F8F8F8',
+    navigationBarTitleText: '新用户注册'
+  }
+  data = {
+    university: ['山东科技大学', '山科', '山科大'],
+    admissionYears: [],
+    chosen_admissionYear: undefined,
+    photo_path: undefined,
+    photo_class: 'imagePhotoRadio',
+    denyAuth: undefined,
+    switchValue: false,
+    photo: undefined
+  }
+
+  onLoad(options) {
+    let date = new Date()
+    let month = date.getMonth() + 1
+    let year = date.getFullYear()
+    let temp
+    if (month > 6) {
+      temp = [year, year - 1, year - 2, year - 3]
+    } else {
+      temp = [year - 1, year - 2, year - 3, year - 4]
+    }
+    this.admissionYears = temp
+  }
+
+  methods = {
+    takePhoto() {
+      wepy
+        .chooseImage({
+          count: 1,
+          sizeType: ['compressed '],
+          sourceType: ['camera']
+        })
+        .then(res => {
+          this.photo_path = res.tempFilePaths[0]
+          this.photo_class = 'imagePhoto'
+          this.$apply()
+        })
+    },
+    bindPickerChange(e) {
+      this.chosen_admissionYear = this.admissionYears[e.detail.value]
+    },
+    formSubmit(e) {
+      var reg = /^\d{17}.$/
+      if (reg.test(e.detail.value.id) === false) {
+        wepy.showModal({
+          title: '身份证号错误',
+          content: '请输入正确的身份证号码',
+          showCancel: false
+        })
+        return
+      }
+      if (this.data.photo_path === undefined) {
+        wepy.showModal({
+          title: '未拍摄照片',
+          content: '请拍摄本人照片',
+          showCancel: false
+        })
+        return
+      }
+      const studentProfile = {
+        id: e.detail.value.id,
+        name: e.detail.value.name,
+        klass: e.detail.value.klass,
+        college: e.detail.value.college,
+        department: '11',
+        admissionYear: parseInt(this.data.chosen_admissionYear, 10),
+        userInfo: this.data.switchValue
+          ? { encrypedData: this.userInfo.encrypedData, iv: this.userInfo.iv }
+          : undefined
+      }
+      this.submit(studentProfile)
+    }
+  }
+  submit = obj => {
+    wepy
+      .request({
+        url: `${globalData.url}/wx/student/register`,
+        method: 'POST',
+        data: obj,
+        header: { WX_SESSION_ID: globalData.sessionId }
+      })
+      .then(res => {
+        if (res.data.error) {
+          wepy.showModal({
+            title: '错误',
+            content: `${res.data.error}`
+          })
+        } else {
+          console.log(res)
+          globalData.student = obj
+          this.uploadAvatar()
+        }
+      })
+  }
+  uploadAvatar = () => {
+    console.log(this.data.photo_path)
+    wepy
+      .uploadFile({
+        url: `${globalData.url}/wx/student/register/_upload`,
+        filePath: this.data.photo_path,
+        name: 'avator',
+        header: { WX_SESSION_ID: globalData.sessionId }
+      })
+      .then(res => {
+        console.log(res)
+        globalData.signUping = false
+        wepy.redirectTo({
+          url: '../chooseHappening/chooseHappening'
+        })
+      })
+  }
+}
+</script>
+<style>
+.page-section {
+  margin-bottom: 20rpx;
+  display: flex;
+  align-items: flex-end;
+  margin-top: 20rpx;
+}
+
+.head_title {
+  font-size: 22px;
+  text-align: center;
+  margin-top: 30rpx;
+}
+
+.title {
+  margin-right: 20rpx;
+  padding-left: 15px;
+  color: #999;
+  font-size: 14px;
+  vertical-align: text-bottom;
+  height: 50rpx;
+  width: 120rpx;
+  bottom: 0;
+}
+
+.after_title {
+  position: relative;
+  margin-top: 20rpx;
+  width: 70%;
+}
+
+.input_container::after {
+  content: ' ';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  height: 1px;
+  border-bottom: 1rpx solid #d9d9d9;
+  color: #d9d9d9;
+}
+
+.input_container {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  background-color: #fff;
+  font-size: 17px;
+}
+
+.input {
+  overflow: hidden;
+  height: 70rpx;
+  width: 100%;
+  margin-left: 20rpx;
+  font-size: 17px;
+  font-family: UICTFontTextStyle;
+  line-height: 90rpx;
+  padding-top: 20rpx;
+}
+
+.picker_container {
+  display: flex;
+}
+
+.non_width {
+  width: auto;
+  color: #999;
+  font-size: 17px;
+}
+
+.signUp_buton {
+  margin-top: 30rpx;
+  width: 500rpx;
+}
+
+.photo {
+  text-align: center;
+  font-size: 14px;
+  color: #999;
+  padding-top: 20rpx;
+}
+
+.imagePhotoRadio {
+  width: 160rpx;
+  height: 160rpx;
+}
+
+.imagePhoto {
+  width: 300rpx;
+  height: 200rpx;
+}
+.placeholder {
+  color: gray;
+}
+.correction {
+  line-height: 70rpx;
+  height: 70rpx;
+}
+.switch_title {
+  width: auto;
+  font-size: 17px;
+}
+.center_text {
+  text-align: center;
+  font-size: 15px;
+}
+</style>

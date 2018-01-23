@@ -1,0 +1,28 @@
+<template>
+  <view>
+    <test headTitle="身高测量" 
+    projectName="height"
+    :showScanButton.sync="showScanButton"
+    :testValue.sync="testValue"
+    :connectState.sync="connectState"
+    :backButton.sync="backButton"
+    :deviceName.sync="deviceName"
+    :timer.sync="timer">
+    </test>
+    </view>
+</template>
+<script>
+import wepy from 'wepy'
+import test from '@/components/test'
+import testPageMixin from '@/mixins/testPageMixin'
+export default class height extends wepy.page {
+  onLoad() {
+    this.$parent.getLocation()
+  }
+  components = {
+    test: test
+  }
+
+  mixins = [testPageMixin]
+}
+</script>

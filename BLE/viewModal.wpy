@@ -1,0 +1,83 @@
+<template>
+</template>
+<script>
+import loading from '../state/loading'
+// import result from '../utils/result'
+import globalData from '../state/globalData'
+import wepy from 'wepy'
+var info = ''
+export default class viewMviewModalComdal extends wepy.component {
+  props = {
+    timer: {
+      type: String,
+      default: undefined,
+      twoWay: true
+    },
+    testValue: {
+      type: String,
+      default: undefined,
+      twoWay: true
+    }
+  }
+  methods = {
+    CHARACTERISTIC_CHANGE() {
+      return new Promise((resolve, reject) => {
+        wepy.onBLECharacteristicValueChange(this.callback)
+        resolve()
+      })
+    }
+  }
+  callback = res => {
+    let buffer = res.value
+    let str = String.fromCharCode(...new Uint8Array(buffer))
+    info += str
+    if (str[str.length - 1] === '}') {
+      var temp = info
+      info = ''
+      this.viewModal(JSON.parse(temp))
+    }
+  }
+  viewModal = info => {
+    if (info.cmd === 3) {
+      this.$invoke('../test', 'setVal', 'timer', info.remain)
+      console.log('receive timer')
+    } else if (info.cmd === 1) {
+      console.log('cmd1')
+      wepy.showModal({
+        title: '连接成功',
+        content: '请开始测试',
+        showCancel: false
+      })
+      if (info.valdata) {
+        this.submit(info.valdata)
+      }
+    } else if (info.cmd === 5) {
+      console.log('cmd5')
+      this.submit(info.valdata)
+    } else {
+    }
+  }
+  submit = data => {
+    loading.showLoading('正在提交成绩...', true)
+    // var obj = result()
+    wepy
+      .request({
+        url: globalData.url,
+        method: 'POST',
+        data: { data: data }
+      })
+      .then(res => {
+        loading.hideLoading()
+        console.log(res.data)
+        this.$invoke('../test', 'setVal', 'testValue', res.data.value)
+        wepy
+          .showModal({
+            title: '测试结束',
+            content: '成绩提交成功',
+            showCancel: false
+          })
+          .then(res => console.log(res))
+      })
+  }
+}
+</script>

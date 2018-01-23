@@ -1,0 +1,236 @@
+<style lang='less'>
+.container {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  box-sizing: border-box;
+}
+</style>
+
+<script>
+import wepy from 'wepy'
+import 'wepy-async-function'
+import loading from './state/loading'
+import globalData from './state/globalData'
+
+export default class extends wepy.app {
+  config = {
+    pages: ['pages/height', 'pages/index', 'pages/signUp'],
+    window: {
+      backgroundTextStyle: 'light',
+      navigationBarBackgroundColor: '#fff',
+      navigationBarTitleText: 'WeChat',
+      navigationBarTextStyle: 'black'
+    }
+  }
+
+  signUping = undefined
+
+  onShow() {
+    // ((!this.student || !this.myTeacher)
+    //  && !this.signUping)
+    //  ? this.studentLogin() : null
+  }
+
+  async studentLogin() {
+    var code
+    loading.showLoading('正在加载个人信息', true)
+
+    await wepy
+      .login()
+      .then(res => {
+        code = res.code
+      })
+      .catch(res => {
+        console.log('error', res)
+      })
+    await wepy
+      .request({
+        url: `${globalData.url}/wx/student/login`,
+        header: { WX_CODE: code },
+        method: 'POST',
+        data: {}
+      })
+      .then(res => {
+        loading.hideLoading()
+        globalData.sessionId = res.header.WX_SESSION_ID
+        console.log('sessionId', this.sessionId)
+        if (!res.data.student) {
+          this.signUping = true
+          wepy.reLaunch({
+            url: '../signUp/signUp'
+          })
+          return
+        }
+        globalData.student = res.data.student
+        this.getTeacher()
+      })
+  }
+  async getTeacher() {
+    loading.showLoading('正在加载教师信息', true)
+    await wepy
+      .request({
+        url: `${globalData.url}/wx/student/supervisor/my`,
+        method: 'GET',
+        header: { WX_SESSION_ID: globalData.sessionId }
+      })
+      .then(res => {
+        console.log(res)
+        loading.hideLoading()
+        if (res.statusCode === 404) {
+          wepy.reLaunch({
+            url: '../chooseHappening/chooseHappening'
+          })
+        } else {
+          globalData.myTeacher = res.data
+        }
+      })
+      .catch(res => {
+        console.log('error', res)
+      })
+  }
+
+  getLocation() {
+    wepy.getSetting().then(res => {
+      if (res.authSetting['scope.userLocation'] === undefined) {
+        wepy
+          .showModal({
+            title: '提示',
+            content:
+              '为了使用该功能，请接下来授权小程序获取您的位置信息，拒绝授权将无法正常使用',
+            showCancel: false
+          })
+          .then(res => {
+            if (res.confirm) {
+              wepy
+                .authorize({ scope: 'scope.userLocation' })
+                .then(res => this.Location())
+                .catch(res => this.authorFail())
+            }
+          })
+      }
+    })
+  }
+
+  authorFail() {
+    wepy
+      .showModal({
+        title: '警告',
+        content:
+          '您之前拒绝授权，将无法正常使用该功能，若要使用该功能，请重新授权小程序'
+      })
+      .then(res => {
+        if (res.confirm) {
+          wepy.openSetting({}).then(res => {
+            if (res.authSetting['scope.userLocation']) {
+              this.Location()
+            } else {
+              wepy.reLaunch({
+                url: '../home/home'
+              })
+            }
+          })
+        } else {
+          wepy.reLaunch({
+            url: '../home/home'
+          })
+        }
+      })
+  }
+
+  Location() {
+    loading.showLoading('正在定位...', true)
+    if (!globalData.latitude || !globalData.longitude) {
+      wepy
+        .getLocation()
+        .then(res => {
+          loading.hideLoading()
+          globalData.latitude = res.latitude
+          globalData.longitude = res.longitude
+        })
+        .catch(res => {
+          loading.hideLoading()
+          this.Location()
+        })
+    } else {
+      loading.hideLoading()
+    }
+  }
+  constructor() {
+    super()
+    this.use('requestfix')
+    this.use('promisify')
+  }
+}
+</script>
+
+<style>
+/**app.wxss**/
+.container {
+  width: 90%;
+  margin-left: 5%;
+  margin-right: 5%; 
+}
+.head_title {
+  font-size:22px;
+  text-align:center;
+  margin-top:30rpx;
+}
+.divider {
+  height:1px;
+  width:100%;
+  background-color:#bdbdbd;
+  position:absolute;
+  right:0;
+  margin-top:20rpx;
+}
+.tips{
+  font-size:13px;
+  color:#d32f2f;
+  margin-top:40rpx;
+  text-align:center;
+}
+.test_info {
+  text-align:center;
+  margin-top:100rpx;
+  font-size: 19px;
+  /* margin-bottom:200rpx; */
+}
+.test_btn {
+  margin-top: 20rpx;
+  margin-bottom: 20rpx;
+  width:500rpx;
+}
+page {
+  padding-bottom: 30rpx;
+}
+.template {
+  margin-top: 100rpx; 
+}
+.template_info {
+  text-align: center;
+  color: #999;
+  font-size: 16px;
+  margin-top: 30rpx; 
+  margin-bottom: 60rpx; 
+}
+.danger_info {
+  color: #d32f2f;
+}
+.primary_info {
+  color:#4caf50;
+}
+.counter {
+  text-align: center;
+  font-size:20px;
+  margin-bottom: 30rpx;
+  margin-top: 100rpx; 
+  font-family:  Helvetica Neue,Helvetica;
+  /* Helvetica Neue,Helvetica; */
+}
+.counter_info {
+  color:#999;
+}
+</style>

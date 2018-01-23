@@ -1,0 +1,11 @@
+<template>
+  
+</template>
+
+<script>
+import wepy from 'wepy'
+export default {
+  
+}
+</script>
+
