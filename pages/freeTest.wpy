@@ -1,25 +1,23 @@
 <template>
-  <view class="container">
-  <view class="head_title">免测操作</view>
-  <view class="divider"></view>
-  <view class="button_container">
-    <navigator url='../mianceApply/mianceApply'>
-      <button>创建一次免测申请</button>
-    </navigator>
-    <button catchtap='showApplication'>查看我的免测申请</button>
-  </view>
-  <block wx:for="{{application}}" wx:if="{{show_application}}">
-    <view class="detail_container">
-      <view class="description">申请原因：{{item.reason}}</view>
-      <view>申请时间：{{item.submitDate}}</view>
-      <view>是否批准：{{item.approved}}</view>
+  <view>
+    <application title="免测">
+    </application>
     </view>
-  </block>
-</view>
 </template>
 <script>
-export default {
-  
+import wepy from 'wepy'
+import application from '@/components/application'
+export default class freeTest extends wepy.page {
+  components = {
+    application: application
+  }
+  data = {
+    apply: false
+  }
+  methods = {
+    hello() {
+      console.log('hello')
+    }
+  }
 }
 </script>
-

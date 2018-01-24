@@ -1,0 +1,59 @@
+<template>
+  <view class="container">
+  <view class="head_title">{{title}}操作</view>
+  <view class="divider"></view>
+  <view class="button_container">
+    <navigator url='./freeTestApply'>
+    <button>创建一次{{title}}申请</button>
+    </navigator>
+    <button @tap='showApplication'>查看我的{{title}}申请</button>
+  </view>
+  <block wx:for="{{application}}" wx:if="{{show_application}}">
+    <view class="detail_container">
+      <view class="description">申请原因：{{item.reason}}</view>
+      <view>申请时间：{{item.submitDate}}</view>
+      <view>是否批准：{{item.approved}}</view>
+    </view>
+  </block>
+</view>
+</template>
+<script>
+import wepy from 'wepy'
+export default class application extends wepy.component {
+  props = {
+    title: String
+  }
+  methods = {
+    createApply() {
+      this.$emit('apply', '1111')
+    },
+    showApplication() {}
+  }
+}
+</script>
+<style>
+page {
+  background-color: #fafafa;
+}
+page {
+  padding-bottom: 30rpx;
+}
+.button_container {
+  margin-top: 50rpx;
+}
+button {
+  margin-top: 40rpx;
+  margin-bottom: 30rpx;
+}
+.detail_container {
+  background-color: white;
+  margin-bottom: 30rpx;
+  padding: 30rpx;
+  box-shadow: 1px 1px 2px 1px #bdbdbd;
+  line-height: 1.7;
+}
+.description {
+  word-break: break-all;
+  overflow: hidden;
+}
+</style>

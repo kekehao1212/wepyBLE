@@ -26,7 +26,10 @@ function CLOSE_CONNECTION() {
 
 function ON_DEVICE_FOUND(resolve, reject) {
   wepy.onBluetoothDeviceFound(function(res) {
+    console.log('device', res)
     if (res.devices[0].localName === deviceName) {
+      console.log(`${res.devices[0].localName}  ${deviceName}`)
+      console.log()
       deviceId = res.devices[0].deviceId
       console.log('deviceId', deviceId)
       foundDevice = true
@@ -37,12 +40,6 @@ function ON_DEVICE_FOUND(resolve, reject) {
     }
   })
 }
-
-// function CONNECTION_CHANGE() {
-//   wepy.onBLEConnectionStateChange(function(res) {
-//     console.log(res)
-//   })
-// }
 
 function CREATE_CONNECTION(resolve, reject) {
   wepy

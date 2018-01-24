@@ -1,8 +1,7 @@
 <template>
   <form bindsubmit="formSubmit">
   <view class="photo" bindtap='takePhoto'>
-    <image src="{{photo_path ? photo_path : '../asset/photo.png'}}" class="{{photo_class}}" mode="widthFix">
-    </image>
+    <image src="{{photo_path ? photo_path : '../asset/photo.png'}}" class="{{photo_class}}" mode="widthFix"/>
     <view>请拍照上传个人照片</view>
   </view>
 
@@ -86,7 +85,6 @@ export default class signUp extends wepy.page {
     navigationBarTitleText: '新用户注册'
   }
   data = {
-    university: ['山东科技大学', '山科', '山科大'],
     admissionYears: [],
     chosen_admissionYear: undefined,
     photo_path: undefined,

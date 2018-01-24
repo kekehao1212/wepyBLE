@@ -1,0 +1,12 @@
+<template>
+  <freeTestApplyCom></freeTestApplyCom>
+</template>
+<script>
+import wepy from 'wepy'
+import freeTestApplyCom from '@/components/freeTestApplyCom'
+export default class freeTestApply extends wepy.page {
+  components = {
+    freeTestApplyCom: freeTestApplyCom
+  }
+}
+</script>

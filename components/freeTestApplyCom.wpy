@@ -1,0 +1,116 @@
+<template>
+  <view class="container">
+  <view class="title"> 请输入免测申请原因：</view>
+  <form bindsubmit="formSubmit">
+    <textarea name="reason"></textarea>
+    <view class="title">请选择免测申请附件：</view>
+    <image src="{{photo_path}}" class="{{photo_class}}" mode="widthFix" bindtap='choseImage'/>
+    <button type="primary" formType="submit">提交申请</button>
+  </form>
+</view>
+</template>
+<script>
+import wepy from 'wepy'
+import globalData from '../state/globalData'
+export default class freeTestApplyCom extends wepy.component {
+  data = {
+    photo_path: '../asset/freeTest.png',
+    photo_class: 'img',
+    photo: undefined
+  }
+  methods = {
+    choseImage() {
+      wepy
+        .chooseImage({
+          count: 9,
+          sizeType: ['compressed']
+        })
+        .then(res => {
+          console.log(res)
+          this.photo_path = res.tempFilePaths[0]
+          this.photo_class = 'imagePhoto'
+          this.photo = res.tempFiles
+        })
+    },
+    formSubmit(e) {
+      if (!this.photo_path) {
+        wepy.showModal({
+          title: '缺少附件',
+          content: '请选择附件后提交申请',
+          showCancel: false
+        })
+        return
+      }
+      wepy
+        .request({
+          url: `${globalData.url}/wx/student/test-free`,
+          method: 'POST',
+          header: { WX_SESSION_ID: globalData.sessionId },
+          data: {
+            reason: e.detail.value.reason
+          }
+        })
+        .then(res => {
+          this.uploadFile(res.data.id)
+        })
+    },
+    uploadFile(id) {
+      console.log(id)
+      wepy
+        .uploadFile({
+          url: `${globalData.url}/wx/student/test-free/${id}/attachment`,
+          filePath: this.photo_path,
+          header: { WX_SESSION_ID: globalData.sessionId },
+          name: 'attachment'
+        })
+        .then(res => {
+          console.log(res)
+          if (res.statusCode === 200) {
+            wepy
+              .showModal({
+                title: '免测申请提交成功',
+                content: '请等待老师审核',
+                showCancel: false
+              })
+              .then(res => {
+                if (res.confirm) {
+                  wepy.navigateBack({})
+                }
+              })
+          }
+        })
+    }
+  }
+}
+</script>
+<style>
+page {
+  background-color: #fafafa;
+}
+textarea {
+  background-color: white;
+  margin-bottom: 30rpx;
+  margin-top: 30rpx;
+  width: 100%;
+}
+.title {
+  margin-top: 50rpx;
+  font-size: 15px;
+  color: #999;
+}
+.img {
+  width: 100px;
+  height: 100px;
+  margin-top: 20rpx;
+  margin-bottom: 30rpx;
+}
+.imagePhoto {
+  width: 180px;
+  height: 200px;
+  margin-top: 20rpx;
+  margin-bottom: 30rpx;
+}
+page {
+  padding-bottom: 30rpx;
+}
+</style>

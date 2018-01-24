@@ -1,0 +1,163 @@
+<template>
+  <view class="container">
+    <view class="picker">
+      <picker range='{{years}}' value="{{index}}" bindchange="bindPickerChange">
+        <view>选择测试年份: {{years[index]}}</view>
+      </picker>
+    </view>
+  <view class="result_container">
+    <table class="table">
+      <th class="tcell th">
+        测试项目
+      </th>
+      <th class="tcell th">
+        测试成绩
+      </th>
+      <view></view>
+      <block wx:for="{{[1,2,3, 4, 5, 6, 7, 8, 9, 10]}}">
+        <view class="tcell_container">
+          <td class="tcell">
+            {{itemName[item]}}
+          </td>
+          <td class="tcell">
+            {{(result[item] != undefined) ? result[item].value : '暂无成绩'}}
+            <image src="../resource/location.png" wx:if="{{result[item]}}" class="image" catchtap='showLocation' data-index='{{item}}'></image>
+            <view>
+              <span class="more_result" catchtap="showDetail" data-index="{{item}}">{{(result[item] === undefined) ? '　' : '更多>>'}}</span>
+            </view>
+          </td>
+        </view>
+      </block>
+    </table>
+  </view>
+</view>
+</template>
+<script>
+import wepy from 'wepy'
+import loading from '../state/loading'
+import globalData from '../state/globalData'
+export default class result extends wepy.page {
+  data = {
+    result: [],
+    itemName: [
+      '',
+      '身高(厘米)',
+      '体重(千克)',
+      '肺活量(毫升)',
+      '坐位体前屈(厘米)',
+      '50米(秒)',
+      '800米(秒)',
+      '1000米(秒)',
+      '仰卧起坐(个)',
+      '引体向上(个)',
+      '跳远(厘米)'
+    ],
+    years: [],
+    index: 0,
+    dataResult: undefined
+  }
+  onLoad(options) {
+    loading.showLoading('正在加载成绩', true)
+    wepy
+      .request({
+        url: `${globalData.url}/wx/student/transcript/`,
+        method: 'GET',
+        header: { WX_SESSION_ID: globalData.sessionId }
+      })
+      .then(res => {
+        console.log(res)
+        this.processingNew(res.data.results)
+      })
+  }
+  methods = {
+    bindPickerChange(e) {
+      this.index = e.detail.value
+      this.result = this.Result[e.detail.value]
+    },
+    processingNew(result) {
+      var dataResult = []
+      var termYears = []
+      for (let item of result) {
+        var index = termYears.findIndex(it => {
+          return item.termYear === it
+        })
+        if (index === -1) {
+          termYears.push(item.termYear)
+          index = termYears.length - 1
+          dataResult[index] = new Array(11)
+        }
+
+        if (item.mark === 'QD') {
+          if (
+            dataResult[index][item.project] &&
+            dataResult[index][item.project].mark
+          ) {
+            if (item.project > 4 && item.project < 8) {
+              if (
+                item.value < dataResult[index][item.project].value ||
+                !dataResult[index][item.project]
+              ) {
+                dataResult[index][item.project] = item
+              }
+            } else {
+              if (
+                item.value > dataResult[index][item.project].value ||
+                !dataResult[index][item.project]
+              ) {
+                dataResult[index][item.project] = item
+              }
+            }
+          } else {
+            dataResult[index][item.project] = item
+          }
+        } else {
+          if (item.project === 5 || item.project === 6 || item.project === 7) {
+            if (
+              !dataResult[index][item.project] ||
+              (dataResult[index][item.project].value > item.value &&
+                !dataResult[index][item.project].mark)
+            ) {
+              dataResult[index][item.project] = item
+            }
+          } else {
+            if (
+              !dataResult[index][item.project] ||
+              (dataResult[index][item.project].value < item.value &&
+                !dataResult[index][item.project].mark)
+            ) {
+              dataResult[index][item.project] = item
+            }
+          }
+        }
+      }
+      this.years = termYears
+      this.result = dataResult[this.index]
+      loading.hideLoading()
+      this.Result = dataResult
+      console.log(dataResult)
+    },
+    showLocation(e) {
+      let longitude = this.result[e.target.dataset.index].longitude
+      let latitude = this.result[e.target.dataset.index].latitude
+      wepy.openLocation({
+        latitude: latitude,
+        longitude: longitude
+      })
+    },
+    showDetail(e) {
+      console.log(e)
+      let year = this.years[this.index]
+      let project = e.target.dataset.index
+      if (!this.result[project]) {
+        return
+      }
+      wepy.navigateTo({
+        url: `../resultDetail/resultDetail?year=${year}&project=${project}`
+      })
+    }
+  }
+}
+</script>
+<style>
+@import '../wxss/result.wxss';
+</style>

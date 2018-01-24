@@ -1,0 +1,103 @@
+<template>
+  <view class="container">
+  <view class="head_title">
+    {{year}}年{{itemName[project]}}测试情况
+  </view>
+  <view class="tips" wx:if="{{project < 5 || project > 7}}">
+    tips:该测试项目下存在多项测试成绩时，取最大成绩
+  </view>
+  <view class="tips" wx:else>
+    tips:该测试项目下存在多项测试成绩时，取最小成绩
+  </view>
+  <view class="result_container">
+  <table class="table">
+    <th class="tcell th">
+      测试时间
+    </th>
+    <th class="tcell th">
+      测试成绩
+    </th>
+    <view></view>
+    <block wx:for="{{result}}">
+      <view class="tcell_container">
+        <td class="tcell">
+          {{item.submitDate}}
+        </td>
+        <td class="tcell">
+        {{item.value}}<span wx:if="{{item.mark}}" class="danger_info">(教师添加)</span>
+           <image src="../resource/location.png" class="image" @tap='showLocation' data-index='{{index}}'/>
+        </td>
+      </view>
+    </block>
+  </table>
+  </view>
+</view>
+</template>
+<script>
+import wepy from 'wepy'
+import loading from '../state/loading'
+import globalData from '../state/globalData'
+import formatTime from '../utils/formatTime'
+export default class resultDetail extends wepy.page {
+  data = {
+    itemName: [
+      '',
+      '身高(厘米)',
+      '体重(千克)',
+      '肺活量(毫升)',
+      '坐位体前屈(厘米)',
+      '50米(秒)',
+      '800米(秒)',
+      '1000米(秒)',
+      '仰卧起坐(个)',
+      '引体向上(个)',
+      '跳远(厘米)'
+    ],
+    year: undefined,
+    project: undefined,
+    result: undefined
+  }
+  methods = {
+    processing(result) {
+      console.log(this.year, this.project)
+      let dataResult = []
+      for (let item of result) {
+        if (item.termYear === this.year && item.project === this.project) {
+          item.submitDate = formatTime(new Date(item.submitDate))
+          dataResult.push(item)
+        }
+      }
+      this.result = dataResult
+      console.log(dataResult)
+      loading.hideLoading()
+    },
+    showLocation(e) {
+      let longitude = this.result[e.target.dataset.index].longitude
+      let latitude = this.result[e.target.dataset.index].latitude
+      wepy.openLocation({
+        latitude: latitude,
+        longitude: longitude
+      })
+    }
+  }
+  onLoad(options) {
+    console.log(options)
+    this.year = options.year
+    this.project = options.project
+    loading.showLoading('正在提交成绩...', true)
+    wepy
+      .request({
+        url: `${globalData.url}/wx/student/transcript/`,
+        method: 'GET',
+        header: { WX_SESSION_ID: globalData.sessionId }
+      })
+      .then(res => {
+        console.log(res)
+        this.methods.processing(res.data.results)
+      })
+  }
+}
+</script>
+<style>
+@import '../wxss/result.wxss';
+</style>

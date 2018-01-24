@@ -1,3 +1,5 @@
+import serverUrl from 'serverUrl'
+
 var globalData = {
   currentPage: undefined,
   deviceId: undefined,
@@ -9,7 +11,7 @@ var globalData = {
   },
   myTeacher: undefined,
   characteristicId: '0000FFE1-0000-1000-8000-00805F9B34FB',
-  url: 'https://wx.acoder.me/wzq',
+  url: serverUrl,
   longitude: 125.2312,
   latitude: 125.2312
 }

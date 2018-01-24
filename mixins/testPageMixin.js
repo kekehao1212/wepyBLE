@@ -3,6 +3,7 @@ import { BLE_INIT, CLOSE_CONNECTION } from '../BLE/connection'
 import WRITE_BLE_DEIVCE from '../BLE/writeValue'
 import parseUrl from '../utils/parseUrl'
 import globalData from '../state/globalData'
+var vibrateInterval
 export default class testPageMixin extends wepy.mixin {
   data = {
     showScanButton: true,
@@ -23,9 +24,29 @@ export default class testPageMixin extends wepy.mixin {
           characteristicId: globalData.characteristicId
         })
           .then(res => {
+            wepy.onBLEConnectionStateChange(res => {
+              if (res.errorCode['0'] !== '0') {
+                this.closeOperation()
+                .then(res => {
+                  wepy.showModal({
+                    title: '连接异常',
+                    content: '连接已经断开',
+                    showCancel: false
+                  })
+                  this.deviceName = undefined
+                  this.showScanButton = true
+                  this.$apply()
+                })
+              }
+            })
             globalData.deviceId = res
-            this.$invoke('test', 'CHARACTERISTIC_CHANGE', '')
-            .then(() => {
+            wepy.setKeepScreenOn({
+              keepScreenOn: true
+            })
+            vibrateInterval = setInterval(() => {
+              wepy.vibrateLong({})
+            }, 1800)
+            this.$invoke('viewModal', 'CHARACTERISTIC_CHANGE', '').then(() => {
               console.log('write 0x00')
               WRITE_BLE_DEIVCE('0x00')
             })
@@ -38,44 +59,52 @@ export default class testPageMixin extends wepy.mixin {
     },
     timer(newVal, oldVal) {
       if (this.timer === 0) {
-        CLOSE_CONNECTION().then(res => {
-          this.connectState = false
-          this.$apply()
-        })
+        this.closeOperation()
       }
     },
     testValue(newVal, oldVal) {
       if (this.testValue) {
-        WRITE_BLE_DEIVCE('0x04')
-        .then(res => {
+        WRITE_BLE_DEIVCE('0x04').then(res => {
           console.log('write 0x04 success')
+          console.log(this.timer)
           this.timer = 0
           this.$apply()
         })
       }
     }
   }
+  closeOperation() {
+    return new Promise((resolve, reject) => {
+      console.log(this.connectState)
+      if (this.connectState) {
+        CLOSE_CONNECTION().then(res => {
+          console.log(res)
+          this.connectState = false
+          this.$apply()
+          wepy.setKeepScreenOn({
+            keepScreenOn: false
+          })
+
+          clearInterval(vibrateInterval)
+          vibrateInterval = null
+          resolve()
+        })
+      } else {
+      }
+    })
+  }
 
   onLoad(options) {
+    console.log(globalData.url)
     options = options || {}
     let scene = options.q ? parseUrl(decodeURIComponent(options.q)) : null
     this.deviceName = scene && scene.deviceName ? scene.deviceName : null
   }
 
   onHide() {
-    if (this.connectState) {
-      CLOSE_CONNECTION().then(res => {
-        console.log(res)
-        this.connectState = false
-      })
-    }
+    this.closeOperation()
   }
   onUnLoad() {
-    if (this.connectState) {
-      CLOSE_CONNECTION().then(res => {
-        console.log(res)
-        this.connectState = false
-      })
-    }
+    this.closeOperation()
   }
 }

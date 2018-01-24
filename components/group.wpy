@@ -14,7 +14,6 @@
 <script>
   import wepy from 'wepy'
   import GroupItem from './groupitem'
-
   export default class Group extends wepy.component {
     props = {
       grouplist: {},

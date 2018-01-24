@@ -3,9 +3,5 @@
 </template>
 
 <script>
-import wepy from 'wepy'
-export default {
-  
-}
+export default {}
 </script>
-
